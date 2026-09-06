@@ -7,10 +7,12 @@ Estas etapas são uma proposta de execução, sem prazo ou preço aprovado.
 - [x] Registrar visão e proposta de escopo.
 - [x] Registrar regras de colaboração.
 - [ ] Identificar qual ferramenta do Google será utilizada.
-- [ ] Confirmar o caminho de integração do Lovable com o GitHub.
-- [ ] Definir tecnologias depois de verificar essas integrações.
+- [x] Confirmar o caminho de integração do Lovable com o GitHub: cria um novo repositório; ver lovable.md.
+- [x] Núcleo portátil em JavaScript e interface local sem dependências para revisão. Banco e IA serão pelo Lovable.
 
 ## 1. Organização financeira funcional
+
+Primeira implementação local entregue; ver implementacao.md. Persistência na nuvem e isolamento entre usuários permanecem pendentes.
 
 Implementar o fluxo de receitas, despesas, dívidas, pagamentos e resumo do mês descrito em produto.md. Validar persistência, isolamento entre usuários e cálculos antes de disponibilizar para uso real.
 
