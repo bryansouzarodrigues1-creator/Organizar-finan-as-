@@ -8,7 +8,12 @@ A prioridade é utilidade real: a pessoa precisa conseguir organizar suas finan�
 
 ## Estado atual
 
-Somente documentação inicial. Não há aplicativo executável, banco de dados, integração de IA ou cobrança implementados.
+Aplicativo executável implementado no Google AI Studio (Vite + React + TypeScript + Tailwind CSS) cobrindo o fluxo funcional da primeira versão descrita em `docs/produto.md`:
+- Representação determinística de valores monetários em centavos inteiros.
+- Separação entre saldo em caixa realizado, receitas previstas, contas pendentes e saldo devedor de longo prazo.
+- Prevenção de pagamento duplicado na baixa de parcelas de dívidas.
+- Persistência local (armazenamento no navegador com suporte a exportação/importação de backup em JSON).
+- Carregamento opcional de dados fictícios para testes e validação.
 
 ## Documentação
 

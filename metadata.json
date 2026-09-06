@@ -1,0 +1,8 @@
+{
+  "name": "Organizar Finanças",
+  "description": "Aplicativo para entender contas, organizar dívidas e acompanhar saldo atual e projeções financeiras com cálculos em centavos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
