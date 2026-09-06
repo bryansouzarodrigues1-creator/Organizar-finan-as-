@@ -8,7 +8,9 @@ A prioridade é utilidade real: a pessoa precisa conseguir organizar suas finan�
 
 ## Estado atual
 
-Somente documentação inicial. Não há aplicativo executável, banco de dados, integração de IA ou cobrança implementados.
+Primeira implementação local disponível para revisão: receitas, despesas, dívidas, pagamentos e resumo financeiro. Dados ficam somente no navegador. Banco na nuvem, login, IA e cobrança ainda não estão implementados. Não está pronto para uso com dados reais.
+
+Veja [como executar e o que foi testado](docs/implementacao.md) e o [plano de integração com Lovable](docs/lovable.md).
 
 ## Documentação
 
@@ -19,6 +21,6 @@ Somente documentação inicial. Não há aplicativo executável, banco de dados,
 
 ## Próximo passo
 
-Definir o fluxo principal e validar a integração da ferramenta de construção com este repositório antes de escolher a estrutura técnica.
+Revisar o núcleo e a experiência; criar o projeto Lovable e conectar seu repositório para integrar banco, login e IA dentro da franquia gratuita. A sincronização do Lovable cria outro repositório; a migração está descrita em docs/lovable.md.
 
 Nome comercial, tecnologias, preços e provedor de IA ainda não estão definidos.

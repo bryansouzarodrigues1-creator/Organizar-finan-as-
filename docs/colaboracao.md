@@ -8,7 +8,7 @@ Este repositório é a fonte central dos arquivos e das decisões do projeto. Co
 
 - ChatGPT: acesso ao repositório verificado na preparação inicial.
 - Google: ferramenta específica e acesso ainda não confirmados.
-- Lovable: integração com este projeto ainda não confirmada.
+- Lovable: projeto ainda não conectado. O fluxo suportado cria um novo repositório; ver lovable.md.
 
 Ter uma conta GitHub conectada em uma ferramenta não concede acesso às outras. Antes de iniciar código no Lovable, verificar na documentação atual qual fluxo de criação, importação ou sincronização é suportado. Não presumir que um repositório existente pode ser importado. Se for necessário outro fluxo, alinhar a migração antes de criar fontes concorrentes.
 
