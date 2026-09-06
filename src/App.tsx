@@ -1,7 +1,9 @@
+import { ChatHome } from './components/ChatHome';
 import { mergeImported } from './utils/importTransactions';
 import { useState, useEffect, useMemo } from 'react';
 import {
   CalendarClock,
+  MessageCircle,
   Calculator,
   Receipt,
   CheckCircle2,
@@ -49,7 +51,7 @@ export function App() {
   });
 
   // Aba ativa para navegação fluida em telas menores
-  const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'debts' | 'projection'>('overview');
+  const [activeTab, setActiveTab] = useState<'chat' | 'overview' | 'transactions' | 'debts' | 'projection'>('chat');
 
   // Modais de controle
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
@@ -356,94 +358,33 @@ export function App() {
       {/* Conteúdo Principal */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         
-        {/* Resumo Financeiro Superior (Os 3 Pilares Fundamentais do Produto) */}
-        <FinancialSummary
-          summary={financialSummary}
-          selectedMonthName={selectedMonthName}
-          onOpenInitialBalanceModal={() => setIsBalanceModalOpen(true)}
-        />
-
-        {/* A Fatia do Dinheiro em Reais (Adeus porcentagens, valores reais de sobra e compromissos) */}
-        <RealMoneySliceBar
-          summary={financialSummary}
-          selectedMonthName={selectedMonthName}
-        />
-
-        {/* Barra de Navegação de Abas */}
-        <div className="flex items-center justify-between border-b border-stone-200">
-          <nav className="flex space-x-1 sm:space-x-4 overflow-x-auto py-1 text-xs sm:text-sm font-semibold">
-            <button
-              type="button"
-              id="tab-overview"
-              onClick={() => setActiveTab('overview')}
-              className={`pb-2.5 px-2.5 sm:px-3 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer ${
-                activeTab === 'overview'
-                  ? 'border-emerald-700 text-emerald-950 font-bold'
-                  : 'border-transparent text-stone-700 hover:text-stone-900 hover:border-stone-300'
-              }`}
-            >
-              <CalendarClock className="w-4 h-4" />
-              <span>Visão Geral & Vencimentos</span>
-              {upcomingCommitments.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 bg-amber-100 text-amber-800 text-[11px] rounded-full">
-                  {upcomingCommitments.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              type="button"
-              id="tab-debts"
-              onClick={() => setActiveTab('debts')}
-              className={`pb-2.5 px-2.5 sm:px-3 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer ${
-                activeTab === 'debts'
-                  ? 'border-emerald-700 text-emerald-950 font-bold'
-                  : 'border-transparent text-stone-700 hover:text-stone-900 hover:border-stone-300'
-              }`}
-            >
-              <Zap className="w-4 h-4 text-rose-600" />
-              <span>Plano Anti-Juros & Dívidas</span>
-              <span className="ml-1 px-1.5 py-0.2 bg-stone-100 text-stone-700 text-[11px] rounded-full">
-                {data.debts.length}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              id="tab-transactions"
-              onClick={() => setActiveTab('transactions')}
-              className={`pb-2.5 px-2.5 sm:px-3 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer ${
-                activeTab === 'transactions'
-                  ? 'border-emerald-700 text-emerald-950 font-bold'
-                  : 'border-transparent text-stone-700 hover:text-stone-900 hover:border-stone-300'
-              }`}
-            >
-              <Receipt className="w-4 h-4" />
-              <span>Movimentações</span>
-              <span className="ml-1 px-1.5 py-0.2 bg-stone-100 text-stone-700 text-[11px] rounded-full">
-                {data.transactions.length}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              id="tab-projection"
-              onClick={() => setActiveTab('projection')}
-              className={`pb-2.5 px-2.5 sm:px-3 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer ${
-                activeTab === 'projection'
-                  ? 'border-emerald-700 text-emerald-950 font-bold'
-                  : 'border-transparent text-stone-700 hover:text-stone-900 hover:border-stone-300'
-              }`}
-            >
-              <Calculator className="w-4 h-4" />
-              <span>Detalhamento da Projeção</span>
-            </button>
-          </nav>
-        </div>
+        <nav aria-label="Seções do aplicativo" className="grid grid-cols-2 min-[400px]:grid-cols-3 sm:flex gap-2 border-b border-stone-200 pb-4">
+          {([
+            {id:'chat', label:'Conversa', Icon:MessageCircle},
+            {id:'overview', label:'Contas', Icon:CalendarClock},
+            {id:'debts', label:'Dívidas', Icon:Zap},
+            {id:'transactions', label:'Histórico', Icon:Receipt},
+            {id:'projection', label:'Projeção', Icon:Calculator},
+          ] as const).map(({id,label,Icon}) => <button key={id} type="button" id={`tab-${id}`} aria-current={activeTab===id?'page':undefined}
+            onClick={()=>setActiveTab(id)} className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${activeTab===id?'bg-emerald-950 text-white':'bg-white border border-stone-200 text-stone-700 hover:bg-stone-100'}`}>
+            <Icon aria-hidden="true" className="w-4 h-4"/>{label}
+          </button>)}
+        </nav>
+        {activeTab === 'chat' && <ChatHome summary={financialSummary} selectedMonthName={selectedMonthName}
+          commitments={upcomingCommitments}
+          onAddTransaction={()=>{setEditingTransaction(null);setIsTxModalOpen(true);}}
+          onOpenDebts={()=>setActiveTab('debts')}
+          onOpenAccounts={()=>setActiveTab('overview')}
+          onOpenProjection={()=>setActiveTab('projection')}
+          onEditBalance={()=>setIsBalanceModalOpen(true)}/>
+        }
 
         {/* Conteúdo da Aba Ativa */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
+            <h2 className="text-xl font-bold">Contas e vencimentos</h2>
+            <FinancialSummary summary={financialSummary} selectedMonthName={selectedMonthName} onOpenInitialBalanceModal={()=>setIsBalanceModalOpen(true)}/>
+
             <UpcomingCommitmentsList
               commitments={upcomingCommitments}
               onPayExpense={handlePayExpense}
@@ -466,6 +407,8 @@ export function App() {
 
         {activeTab === 'debts' && (
           <div className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-bold">Minhas dívidas</h2><button type="button" className="px-4 py-3 rounded-xl bg-emerald-950 text-white font-semibold" onClick={()=>{setEditingDebt(null);setIsDebtModalOpen(true);}}>Cadastrar dívida</button></div>
+
             {/* O Plano de Ataque às Dívidas e Simulador de Economia de Juros */}
             <DebtAttackPlan
               debts={data.debts}
@@ -494,6 +437,8 @@ export function App() {
 
         {activeTab === 'transactions' && (
           <div className="space-y-4">
+            <h2 className="text-xl font-bold">Histórico de movimentações</h2>
+
             {/* Barra de atalhos rápidos com Puxar do Banco */}
             <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
@@ -515,7 +460,7 @@ export function App() {
                 className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-colors shrink-0 cursor-pointer"
               >
                 <Building2 className="w-3.5 h-3.5" />
-                <span>Puxar Gastos do Banco</span>
+                <span>Importar extrato</span>
               </button>
             </div>
 
@@ -538,6 +483,9 @@ export function App() {
         )}
 
         {activeTab === 'projection' && (
+          <div className="space-y-5">
+          <h2 className="text-xl font-bold">Projeção do mês</h2>
+          <RealMoneySliceBar summary={financialSummary} selectedMonthName={selectedMonthName}/>
           <MonthlyProjection
             summary={financialSummary}
             transactions={data.transactions}
@@ -545,6 +493,7 @@ export function App() {
             selectedMonthYear={selectedMonthYear}
             selectedMonthName={selectedMonthName}
           />
+          </div>
         )}
       </main>
 

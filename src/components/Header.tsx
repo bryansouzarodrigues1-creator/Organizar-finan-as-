@@ -101,11 +101,11 @@ export const Header: React.FC<HeaderProps> = ({
                     Organizar Finanças
                   </h1>
                   <span className="hidden sm:inline-flex text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
-                    Cálculos em centavos
+                    Dados neste dispositivo
                   </span>
                 </div>
                 <p className="text-xs text-stone-700">
-                  Visão transparente de contas, dívidas e projeções
+                  Suas contas e dívidas, em um só lugar
                 </p>
               </div>
             </div>
@@ -277,7 +277,7 @@ export const Header: React.FC<HeaderProps> = ({
               className="p-2 bg-emerald-100 text-emerald-950 rounded-lg text-left font-bold col-span-2 flex items-center gap-2"
             >
               <Building2 className="w-4 h-4 text-emerald-800" />
-              <span>Puxar Gastos do Banco (OFX / Pix)</span>
+              <span>Importar extrato (OFX / Pix)</span>
             </button>
             <button
               type="button"

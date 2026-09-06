@@ -33,3 +33,7 @@ Nome comercial, tecnologias, preços e provedor de IA ainda não estão definido
 Importação OFX/texto é manual; Open Finance real ainda não está conectado. Veja [correções, hipóteses dos juros e limites de importação](docs/correcoes-importacao-juros.md).
 
 Para validar: `npm ci`, `npm test` e `npm run build`. O arquivo de dependências travadas foi incluído para reproduzir a instalação.
+
+## Interface de conversa
+
+A tela inicial agora prepara a conversa com a assistente, acompanhada de resumo financeiro e atalhos para as telas existentes. A IA permanece desconectada e o envio de mensagens desativado. Veja [escopo da interface e integração futura](docs/interface-conversa.md).
