@@ -46,6 +46,9 @@ export const MonthlyProjection: React.FC<MonthlyProjectionProps> = ({
 
   const isSurplus = summary.projectedAvailableInCents >= 0;
 
+  const [selYear, selMonth] = selectedMonthYear.split('-').map(Number);
+  const daysInSelectedMonth = new Date(selYear, selMonth, 0).getDate();
+
   return (
     <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-xs">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-stone-100">
@@ -55,16 +58,20 @@ export const MonthlyProjection: React.FC<MonthlyProjectionProps> = ({
           </div>
           <div>
             <h2 className="text-base font-bold text-stone-900">
-              Detalhamento da Projeção ({selectedMonthName})
+              {summary.isPastMonth
+                ? `Balanço Consolidado (${selectedMonthName})`
+                : `Detalhamento da Projeção (${selectedMonthName})`}
             </h2>
             <p className="text-xs text-stone-700">
-              Cálculo auditável do saldo disponível ao término do período
+              {summary.isPastMonth
+                ? 'Demonstrativo fechado das receitas e despesas realizadas no período'
+                : 'Cálculo auditável do saldo disponível ao término do período'}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-stone-700 bg-stone-100 px-2.5 py-1 rounded-lg self-start sm:self-auto">
           <Calendar className="w-3.5 h-3.5 text-stone-500" />
-          <span>Período considerado: 01 a 31 de {selectedMonthName}</span>
+          <span>Período considerado: 01 a {daysInSelectedMonth} de {selectedMonthName}</span>
         </div>
       </div>
 

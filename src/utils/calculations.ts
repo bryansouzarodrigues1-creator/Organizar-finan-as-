@@ -79,13 +79,32 @@ export function calculateFinancialSummary(
     }
   });
 
-  // 3. Quanto ficará disponível depois dos compromissos registrados? (Projeção)
-  // Saldo Atual + Receitas Previstas no mês - Despesas Pendentes no mês - Parcelas de Dívidas a Vencer no mês
-  const projectedAvailableInCents =
-    currentBalanceInCents +
-    pendingIncomeInCents -
-    pendingExpensesInCents -
-    debtInstallmentsPendingInCents;
+  // 3. Movimentações realizadas especificamente no mês selecionado
+  const monthCompletedIncomes = transactions.filter(
+    (t) => t.type === 'income' && t.status === 'completed' && t.dueDate.startsWith(selectedMonthYear)
+  );
+  const monthRealizedIncomeInCents = addCents(...monthCompletedIncomes.map((t) => t.amountInCents));
+
+  const monthCompletedExpenses = transactions.filter(
+    (t) => t.type === 'expense' && t.status === 'completed' && t.dueDate.startsWith(selectedMonthYear)
+  );
+  const monthRealizedExpenseInCents = addCents(...monthCompletedExpenses.map((t) => t.amountInCents));
+
+  // Balanço Líquido do mês: Total de receitas (recebidas + previstas) menos total de despesas (pagas + pendentes + parcelas)
+  const totalMonthIncomeInCents = monthRealizedIncomeInCents + pendingIncomeInCents;
+  const totalMonthExpenseInCents = monthRealizedExpenseInCents + pendingExpensesInCents + debtInstallmentsPendingInCents;
+  const monthNetBalanceInCents = totalMonthIncomeInCents - totalMonthExpenseInCents;
+
+  const currentMonthYear = new Date().toISOString().slice(0, 7);
+  const isPastMonth = selectedMonthYear < currentMonthYear;
+  const isFutureMonth = selectedMonthYear > currentMonthYear;
+
+  // 4. Quanto ficará disponível depois dos compromissos registrados? (Projeção)
+  // No mês atual ou futuro: Saldo Atual + Receitas Previstas no mês - Despesas Pendentes no mês - Parcelas a Vencer
+  // Em meses já encerrados no passado: Balanço Líquido Realizado daquele mês
+  const projectedAvailableInCents = isPastMonth
+    ? monthNetBalanceInCents
+    : currentBalanceInCents + pendingIncomeInCents - pendingExpensesInCents - debtInstallmentsPendingInCents;
 
   // Saldo total devedor (dívidas ativas acumuladas)
   const totalOutstandingDebtInCents = addCents(...debts.map((d) => d.totalDebtInCents));
@@ -110,10 +129,15 @@ export function calculateFinancialSummary(
     currentBalanceInCents,
     totalIncomeCompletedInCents,
     totalExpenseCompletedInCents,
+    monthRealizedIncomeInCents,
+    monthRealizedExpenseInCents,
+    monthNetBalanceInCents,
     pendingIncomeInCents,
     pendingExpensesInCents,
     debtInstallmentsPendingInCents,
     projectedAvailableInCents,
+    isPastMonth,
+    isFutureMonth,
     totalOutstandingDebtInCents,
     hasPendingDebtsDueThisMonth,
     missingDataWarnings,

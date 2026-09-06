@@ -10,11 +10,13 @@ import { formatCents } from '../utils/money';
 interface RealMoneySliceBarProps {
   summary: FinancialSummaryCalculations;
   selectedMonthName: string;
+  selectedMonthYear: string;
 }
 
 export const RealMoneySliceBar: React.FC<RealMoneySliceBarProps> = ({
   summary,
   selectedMonthName,
+  selectedMonthYear,
 }) => {
   const billsInCents = summary.pendingExpensesInCents;
   const debtsInCents = summary.debtInstallmentsPendingInCents;
@@ -31,11 +33,30 @@ export const RealMoneySliceBar: React.FC<RealMoneySliceBarProps> = ({
   const freeWidth = freeMoneyInCents > 0 ? Math.max(0, 100 - billsWidth - debtsWidth) : 0;
 
   // Dias restantes no mês para cálculo de gasto diário seguro
-  const today = new Date();
-  const daysInCurrentMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-  const daysRemaining = Math.max(1, daysInCurrentMonth - today.getDate() + 1);
+  const [selYear, selMonth] = selectedMonthYear.split('-').map(Number);
+  const daysInSelectedMonth = new Date(selYear, selMonth, 0).getDate();
 
-  const safeDailySpendInCents = freeMoneyInCents > 0 ? Math.floor(freeMoneyInCents / daysRemaining) : 0;
+  const today = new Date();
+  const currentMonthYear = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+  let daysRemaining: number;
+  let statusDayText = '';
+
+  if (selectedMonthYear < currentMonthYear) {
+    daysRemaining = 0;
+    statusDayText = 'Mês encerrado';
+  } else if (selectedMonthYear > currentMonthYear) {
+    daysRemaining = daysInSelectedMonth;
+    statusDayText = `Média para todos os ${daysInSelectedMonth} dias do mês`;
+  } else {
+    // Mês atual
+    daysRemaining = Math.max(1, daysInSelectedMonth - today.getDate() + 1);
+    statusDayText = `Restam ${daysRemaining} dias no mês`;
+  }
+
+  const safeDailySpendInCents = (!summary.isPastMonth && freeMoneyInCents > 0 && daysRemaining > 0)
+    ? Math.floor(freeMoneyInCents / daysRemaining)
+    : 0;
 
   return (
     <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-xs space-y-4">
@@ -57,24 +78,26 @@ export const RealMoneySliceBar: React.FC<RealMoneySliceBarProps> = ({
           </div>
         </div>
 
-        {/* Termômetro de gasto seguro por dia */}
-        {!isDeficit && freeMoneyInCents > 0 && (
+        {/* Termômetro de gasto seguro por dia ou status do mês */}
+        {summary.isPastMonth ? (
+          <div className="inline-flex items-center gap-2 bg-stone-100 border border-stone-200 px-3 py-1.5 rounded-xl text-xs text-stone-700 font-medium self-start sm:self-auto">
+            <span>Mês encerrado • Visualização histórica</span>
+          </div>
+        ) : !isDeficit && freeMoneyInCents > 0 ? (
           <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs text-emerald-950 font-medium self-start sm:self-auto">
             <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>
-              Você pode gastar até <strong>{formatCents(safeDailySpendInCents)} por dia</strong> com segurança
+              Você pode gastar até <strong>{formatCents(safeDailySpendInCents)} por dia</strong> com segurança ({statusDayText})
             </span>
           </div>
-        )}
-
-        {isDeficit && (
+        ) : isDeficit ? (
           <div className="inline-flex items-center gap-2 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl text-xs text-rose-950 font-medium self-start sm:self-auto">
             <Flame className="w-4 h-4 text-rose-600 shrink-0" />
             <span>
               Faltam <strong>{formatCents(Math.abs(freeMoneyInCents))}</strong> para fechar a conta do mês
             </span>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* A Barra de Fatias em Dinheiro Real */}

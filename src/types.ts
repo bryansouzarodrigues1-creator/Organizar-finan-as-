@@ -45,9 +45,14 @@ export interface AppData {
 
 export interface FinancialSummaryCalculations {
   // 1. Quanto dinheiro tenho agora?
-  currentBalanceInCents: number; // Saldo inicial + receitas realizadas - despesas realizadas
+  currentBalanceInCents: number; // Saldo inicial + receitas realizadas - despesas realizadas (global)
   totalIncomeCompletedInCents: number;
   totalExpenseCompletedInCents: number;
+
+  // Realizados no mês selecionado
+  monthRealizedIncomeInCents: number;
+  monthRealizedExpenseInCents: number;
+  monthNetBalanceInCents: number; // Total receitas do mês - total despesas do mês
 
   // 2. Compromissos e previsões do mês selecionado
   pendingIncomeInCents: number;
@@ -56,6 +61,10 @@ export interface FinancialSummaryCalculations {
 
   // 3. Quanto ficará disponível depois dos compromissos registrados?
   projectedAvailableInCents: number; // currentBalance + pendingIncome - pendingExpenses - debtInstallmentsPending
+
+  // Período temporal
+  isPastMonth: boolean;
+  isFutureMonth: boolean;
 
   // Saldo devedor global
   totalOutstandingDebtInCents: number;

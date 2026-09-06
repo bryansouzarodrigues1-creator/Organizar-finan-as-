@@ -32,10 +32,11 @@ export function parseToCents(val: string | number): number {
 
   if (!val || typeof val !== 'string') return 0;
 
-  const cleaned = val.trim();
-  if (cleaned === '') return 0;
+  // Remove caracteres que não são números, vírgula, ponto ou sinal negativo (como 'R$', espaços, etc.)
+  const cleaned = val.replace(/[^\d,.-]/g, '').trim();
+  if (cleaned === '' || cleaned === '-') return 0;
 
-  // Se tiver vírgula como separador decimal (padrão brasileiro)
+  // Se tiver vírgula como separador decimal (padrão brasileiro, ex: "1.500,50" ou "150,00")
   if (cleaned.includes(',')) {
     // Remove pontos de milhar e troca a vírgula decimal por ponto
     const normalized = cleaned.replace(/\./g, '').replace(',', '.');
@@ -43,7 +44,15 @@ export function parseToCents(val: string | number): number {
     return isNaN(parsed) ? 0 : Math.round(parsed * 100);
   }
 
-  // Se tiver somente ponto
+  // Se tiver pontos múltiplos (ex: "1.500.000")
+  const parts = cleaned.split('.');
+  if (parts.length > 2) {
+    const normalized = parts.join('');
+    const parsed = parseFloat(normalized);
+    return isNaN(parsed) ? 0 : Math.round(parsed * 100);
+  }
+
+  // Se tiver somente um ponto (ex: "150.50" ou "150")
   const parsed = parseFloat(cleaned);
   return isNaN(parsed) ? 0 : Math.round(parsed * 100);
 }

@@ -39,6 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [showDataMenu, setShowDataMenu] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   // Formata o mês para exibição legível em português (ex: "Setembro de 2026")
   const [yearStr, monthStr] = selectedMonthYear.split('-');
@@ -237,19 +238,42 @@ export const Header: React.FC<HeaderProps> = ({
                   </label>
 
                   <div className="border-t border-stone-100 my-1 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (confirm('Tem certeza que deseja zerar todos os registros e recomeçar do zero?')) {
-                          onResetData();
-                          setShowDataMenu(false);
-                        }
-                      }}
-                      className="w-full text-left px-2 py-1.5 hover:bg-red-50 text-red-700 rounded-md flex items-center gap-2"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5 text-red-500" />
-                      <span>Limpar todos os dados</span>
-                    </button>
+                    {confirmReset ? (
+                      <div className="p-2 bg-red-50 rounded-md border border-red-200 text-xs space-y-1.5">
+                        <span className="font-bold text-red-900 block text-[11px]">
+                          Zerar todos os lançamentos?
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onResetData();
+                              setConfirmReset(false);
+                              setShowDataMenu(false);
+                            }}
+                            className="bg-red-600 hover:bg-red-700 text-white font-bold px-2 py-1 rounded text-[11px] cursor-pointer"
+                          >
+                            Sim, zerar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmReset(false)}
+                            className="bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold px-2 py-1 rounded text-[11px] cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmReset(true)}
+                        className="w-full text-left px-2 py-1.5 hover:bg-red-50 text-red-700 rounded-md flex items-center gap-2 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 text-red-500" />
+                        <span>Limpar todos os dados</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -306,18 +330,39 @@ export const Header: React.FC<HeaderProps> = ({
             >
               Exportar backup
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (confirm('Zerar todos os registros?')) {
-                  onResetData();
-                  setShowDataMenu(false);
-                }
-              }}
-              className="p-2 bg-red-50 text-red-700 rounded-lg text-left"
-            >
-              Limpar dados
-            </button>
+            {confirmReset ? (
+              <div className="p-2 bg-red-50 text-red-700 rounded-lg text-left col-span-2 space-y-1.5 border border-red-200">
+                <span className="text-xs font-bold text-red-900 block">Zerar todos os dados?</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onResetData();
+                      setConfirmReset(false);
+                      setShowDataMenu(false);
+                    }}
+                    className="bg-red-600 text-white font-bold px-2 py-1 rounded text-xs"
+                  >
+                    Sim, zerar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmReset(false)}
+                    className="bg-stone-200 text-stone-700 font-semibold px-2 py-1 rounded text-xs"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmReset(true)}
+                className="p-2 bg-red-50 text-red-700 rounded-lg text-left font-medium cursor-pointer"
+              >
+                Limpar dados
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -31,6 +31,8 @@ export const DebtManager: React.FC<DebtManagerProps> = ({
   onDeleteDebt,
   onPayInstallment,
 }) => {
+  const [deletingDebtId, setDeletingDebtId] = React.useState<string | null>(null);
+
   return (
     <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-xs">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
@@ -117,28 +119,47 @@ export const DebtManager: React.FC<DebtManagerProps> = ({
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => onEditDebt(debt)}
-                        title="Editar dívida"
-                        className="p-1.5 text-stone-700 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (confirm(`Excluir o registro da dívida "${debt.name}"?`)) {
+                    {deletingDebtId === debt.id ? (
+                      <div className="flex items-center gap-1 bg-red-50 p-1 rounded-lg border border-red-200">
+                        <span className="text-[10px] font-semibold text-red-700 px-1">Excluir?</span>
+                        <button
+                          type="button"
+                          onClick={() => {
                             onDeleteDebt(debt.id);
-                          }
-                        }}
-                        title="Excluir dívida"
-                        className="p-1.5 text-stone-700 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                            setDeletingDebtId(null);
+                          }}
+                          className="text-[10px] bg-red-600 hover:bg-red-700 text-white font-bold px-1.5 py-0.5 rounded cursor-pointer"
+                        >
+                          Sim
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeletingDebtId(null)}
+                          className="text-[10px] bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold px-1.5 py-0.5 rounded cursor-pointer"
+                        >
+                          Não
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onEditDebt(debt)}
+                          title="Editar dívida"
+                          className="p-1.5 text-stone-700 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeletingDebtId(debt.id)}
+                          title="Excluir dívida"
+                          className="p-1.5 text-stone-700 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Informações Numéricas Centrais */}

@@ -69,7 +69,8 @@ export function App() {
   };
 
   const handleImportBankTransactions = (
-    newTransactions: Omit<Transaction, 'id' | 'createdAt'>[]
+    newTransactions: Omit<Transaction, 'id' | 'createdAt'>[],
+    skippedCount: number = 0
   ) => {
     const created: Transaction[] = newTransactions.map((tx, idx) => ({
       ...tx,
@@ -82,7 +83,13 @@ export function App() {
       transactions: [...created, ...prev.transactions],
     }));
 
-    showToast(`${created.length} lançamentos bancários importados e fatias atualizadas!`);
+    if (skippedCount > 0) {
+      showToast(
+        `${created.length} lançamentos importados com sucesso (${skippedCount} duplicados ignorados)!`
+      );
+    } else {
+      showToast(`${created.length} lançamentos bancários importados e fatias atualizadas!`);
+    }
   };
 
   // Salvar automaticamente no localStorage sempre que os dados mudarem
@@ -146,19 +153,74 @@ export function App() {
   };
 
   const handleDeleteTransaction = (id: string) => {
-    setData((prev) => ({
-      ...prev,
-      transactions: prev.transactions.filter((t) => t.id !== id),
-    }));
+    setData((prev) => {
+      const txToDelete = prev.transactions.find((t) => t.id === id);
+      let updatedDebts = prev.debts;
+
+      // Se a movimentação for o pagamento de uma parcela de dívida, restaura a parcela e o saldo devedor
+      if (txToDelete?.debtId && txToDelete.status === 'completed') {
+        updatedDebts = prev.debts.map((d) => {
+          if (d.id === txToDelete.debtId) {
+            return {
+              ...d,
+              remainingInstallments: Math.min(d.totalInstallments, d.remainingInstallments + 1),
+              totalDebtInCents: d.totalDebtInCents + txToDelete.amountInCents,
+            };
+          }
+          return d;
+        });
+      }
+
+      return {
+        ...prev,
+        transactions: prev.transactions.filter((t) => t.id !== id),
+        debts: updatedDebts,
+      };
+    });
     showToast('Lançamento excluído e totais recalculados.');
   };
 
   const handleToggleTransactionStatus = (id: string) => {
     setData((prev) => {
+      const tx = prev.transactions.find((t) => t.id === id);
+      if (!tx) return prev;
+
+      const newStatus: TransactionStatus =
+        tx.status === 'completed' ? 'pending' : 'completed';
+
+      let updatedDebts = prev.debts;
+
+      // Sincronização com o saldo devedor se for parcela de dívida
+      if (tx.debtId) {
+        if (newStatus === 'pending' && tx.status === 'completed') {
+          // Reverte pagamento: devolve parcela e recompõe dívida
+          updatedDebts = prev.debts.map((d) => {
+            if (d.id === tx.debtId) {
+              return {
+                ...d,
+                remainingInstallments: Math.min(d.totalInstallments, d.remainingInstallments + 1),
+                totalDebtInCents: d.totalDebtInCents + tx.amountInCents,
+              };
+            }
+            return d;
+          });
+        } else if (newStatus === 'completed' && tx.status === 'pending') {
+          // Confirma pagamento: consome parcela e amortiza dívida
+          updatedDebts = prev.debts.map((d) => {
+            if (d.id === tx.debtId) {
+              return {
+                ...d,
+                remainingInstallments: Math.max(0, d.remainingInstallments - 1),
+                totalDebtInCents: Math.max(0, d.totalDebtInCents - tx.amountInCents),
+              };
+            }
+            return d;
+          });
+        }
+      }
+
       const updated = prev.transactions.map((t) => {
         if (t.id === id) {
-          const newStatus: TransactionStatus =
-            t.status === 'completed' ? 'pending' : 'completed';
           return {
             ...t,
             status: newStatus,
@@ -167,7 +229,12 @@ export function App() {
         }
         return t;
       });
-      return { ...prev, transactions: updated };
+
+      return {
+        ...prev,
+        transactions: updated,
+        debts: updatedDebts,
+      };
     });
     showToast('Situação da movimentação atualizada.');
   };
@@ -233,7 +300,7 @@ export function App() {
       );
 
     if (alreadyPaid) {
-      alert(`A parcela de ${selectedMonthName} desta dívida já foi baixada anteriormente.`);
+      showToast(`A parcela de ${selectedMonthName} desta dívida já foi baixada anteriormente.`);
       return;
     }
 
@@ -373,6 +440,7 @@ export function App() {
         <RealMoneySliceBar
           summary={financialSummary}
           selectedMonthName={selectedMonthName}
+          selectedMonthYear={selectedMonthYear}
         />
 
         {/* Barra de Navegação de Abas */}
@@ -614,6 +682,7 @@ export function App() {
         onClose={() => setIsBankImportModalOpen(false)}
         onImportTransactions={handleImportBankTransactions}
         currentYear={selectedMonthYear.slice(0, 4)}
+        existingTransactions={data.transactions}
       />
     </div>
   );

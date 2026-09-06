@@ -34,6 +34,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
 }) => {
   const [typeFilter, setTypeFilter] = useState<'all' | TransactionType>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | TransactionStatus>('all');
+  const [deletingTxId, setDeletingTxId] = useState<string | null>(null);
 
   // Filtrar pelo mês selecionado
   const monthTransactions = transactions.filter((t) => t.dueDate.startsWith(selectedMonthYear));
@@ -252,28 +253,47 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                     {formatCents(tx.amountInCents)}
                   </span>
 
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => onEditTransaction(tx)}
-                      title="Editar lançamento"
-                      className="p-1.5 text-stone-700 hover:text-stone-900 hover:bg-stone-200 rounded-lg transition-colors"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (confirm(`Excluir "${tx.description}"?`)) {
+                  {deletingTxId === tx.id ? (
+                    <div className="flex items-center gap-1 bg-red-50 p-1 rounded-lg border border-red-200">
+                      <span className="text-[10px] font-semibold text-red-700 px-1">Excluir?</span>
+                      <button
+                        type="button"
+                        onClick={() => {
                           onDeleteTransaction(tx.id);
-                        }
-                      }}
-                      title="Excluir lançamento"
-                      className="p-1.5 text-stone-700 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                          setDeletingTxId(null);
+                        }}
+                        className="text-[10px] bg-red-600 hover:bg-red-700 text-white font-bold px-1.5 py-0.5 rounded cursor-pointer"
+                      >
+                        Sim
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeletingTxId(null)}
+                        className="text-[10px] bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold px-1.5 py-0.5 rounded cursor-pointer"
+                      >
+                        Não
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => onEditTransaction(tx)}
+                        title="Editar lançamento"
+                        className="p-1.5 text-stone-700 hover:text-stone-900 hover:bg-stone-200 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeletingTxId(tx.id)}
+                        title="Excluir lançamento"
+                        className="p-1.5 text-stone-700 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );

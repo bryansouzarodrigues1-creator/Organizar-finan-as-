@@ -89,13 +89,13 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
           </div>
 
           <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-700">
-            <span className="flex items-center gap-1 text-emerald-800">
+            <span className="flex items-center gap-1 text-emerald-800" title={`Entradas no mês de ${selectedMonthName}`}>
               <ArrowUpRight className="w-3.5 h-3.5" />
-              Entradas: {formatCents(summary.totalIncomeCompletedInCents)}
+              Entradas no mês: {formatCents(summary.monthRealizedIncomeInCents)}
             </span>
-            <span className="flex items-center gap-1 text-rose-800">
+            <span className="flex items-center gap-1 text-rose-800" title={`Saídas pagas no mês de ${selectedMonthName}`}>
               <ArrowDownRight className="w-3.5 h-3.5" />
-              Saídas: {formatCents(summary.totalExpenseCompletedInCents)}
+              Saídas no mês: {formatCents(summary.monthRealizedExpenseInCents)}
             </span>
           </div>
         </div>
@@ -123,7 +123,9 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
               {formatCents(summary.pendingExpensesInCents + summary.debtInstallmentsPendingInCents)}
             </div>
             <p className="text-xs text-stone-700 mt-1">
-              Total de contas e parcelas a vencer neste mês.
+              {summary.isPastMonth
+                ? 'Compromissos que ficaram em aberto neste mês passado.'
+                : 'Total de contas e parcelas a vencer neste mês.'}
             </p>
           </div>
 
@@ -150,9 +152,11 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
                     isProjectionNegative ? 'bg-rose-600' : 'bg-emerald-600'
                   }`}
                 ></span>
-                3. Projeção de Sobra
+                {summary.isPastMonth ? '3. Resultado Consolidado' : '3. Projeção de Sobra'}
               </span>
-              <h2 className="text-sm text-stone-700">Saldo Previsto Final</h2>
+              <h2 className="text-sm text-stone-700">
+                {summary.isPastMonth ? 'Balanço Final do Mês' : 'Saldo Previsto Final'}
+              </h2>
             </div>
             <div
               className={`w-9 h-9 rounded-xl flex items-center justify-center ${
@@ -172,14 +176,22 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
               {formatCents(summary.projectedAvailableInCents)}
             </div>
             <p className="text-xs text-stone-700 mt-1">
-              {isProjectionNegative
+              {summary.isPastMonth
+                ? isProjectionNegative
+                  ? 'Neste mês as saídas e compromissos superaram as receitas.'
+                  : 'Neste mês houve saldo positivo entre receitas e despesas.'
+                : isProjectionNegative
                 ? 'Atenção: Os compromissos excedem as receitas previstas.'
                 : 'Valor que restará livre após quitar todas as contas previstas.'}
             </p>
           </div>
 
           <div className="pt-3 border-t border-stone-200/60 text-xs text-stone-700 flex items-center justify-between">
-            <span>Receitas previstas: +{formatCents(summary.pendingIncomeInCents)}</span>
+            <span>
+              {summary.isPastMonth
+                ? `Total do mês: ${formatCents(summary.monthRealizedIncomeInCents + summary.pendingIncomeInCents)}`
+                : `Receitas previstas: +${formatCents(summary.pendingIncomeInCents)}`}
+            </span>
             <span className="text-[11px] font-medium text-stone-600">
               {isProjectionNegative ? 'Déficit no mês' : 'Superávit no mês'}
             </span>

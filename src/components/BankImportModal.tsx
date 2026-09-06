@@ -7,7 +7,8 @@ import {
   CheckCircle2,
   Sparkles,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  AlertTriangle
 } from 'lucide-react';
 import { Transaction } from '../types';
 import { parseOFX, parsePastedStatement } from '../utils/bankParser';
@@ -16,8 +17,12 @@ import { formatCents } from '../utils/money';
 interface BankImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImportTransactions: (transactions: Omit<Transaction, 'id' | 'createdAt'>[]) => void;
+  onImportTransactions: (
+    transactions: Omit<Transaction, 'id' | 'createdAt'>[],
+    skippedCount?: number
+  ) => void;
   currentYear: string;
+  existingTransactions: Transaction[];
 }
 
 export const BankImportModal: React.FC<BankImportModalProps> = ({
@@ -25,6 +30,7 @@ export const BankImportModal: React.FC<BankImportModalProps> = ({
   onClose,
   onImportTransactions,
   currentYear,
+  existingTransactions,
 }) => {
   const [activeTab, setActiveTab] = useState<'ofx' | 'paste' | 'openfinance'>('ofx');
 
@@ -35,10 +41,27 @@ export const BankImportModal: React.FC<BankImportModalProps> = ({
   const [previewList, setPreviewList] = useState<Omit<Transaction, 'id' | 'createdAt'>[]>([]);
   const [fileName, setFileName] = useState<string | null>(null);
 
+  // Evitar duplicidade de lançamentos
+  const [skipDuplicates, setSkipDuplicates] = useState(true);
+
   // Simulação de banco selecionado no Open Finance
   const [selectedBank, setSelectedBank] = useState<string>('Nubank');
 
   if (!isOpen) return null;
+
+  const isPotentialDuplicate = (item: Omit<Transaction, 'id' | 'createdAt'>) => {
+    return existingTransactions.some(
+      (existing) =>
+        existing.dueDate === item.dueDate &&
+        existing.amountInCents === item.amountInCents &&
+        existing.type === item.type &&
+        (existing.description.toLowerCase().trim() === item.description.toLowerCase().trim() ||
+          existing.description.toLowerCase().includes(item.description.toLowerCase().slice(0, 10)) ||
+          item.description.toLowerCase().includes(existing.description.toLowerCase().slice(0, 10)))
+    );
+  };
+
+  const duplicatesInPreview = previewList.filter(isPotentialDuplicate);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -54,6 +77,7 @@ export const BankImportModal: React.FC<BankImportModalProps> = ({
       }
     };
     reader.readAsText(file);
+    e.target.value = '';
   };
 
   const handleParsePastedText = () => {
@@ -110,18 +134,34 @@ export const BankImportModal: React.FC<BankImportModalProps> = ({
 
   const handleConfirmImport = () => {
     if (previewList.length === 0) return;
-    onImportTransactions(previewList);
+
+    const itemsToImport = skipDuplicates
+      ? previewList.filter((item) => !isPotentialDuplicate(item))
+      : previewList;
+
+    const skippedCount = previewList.length - itemsToImport.length;
+
+    if (itemsToImport.length === 0) {
+      // Todos eram duplicados
+      return;
+    }
+
+    onImportTransactions(itemsToImport, skippedCount);
     setPreviewList([]);
     setPastedText('');
     setFileName(null);
     onClose();
   };
 
-  const totalIncomesInCents = previewList
+  const finalItemsToImport = skipDuplicates
+    ? previewList.filter((item) => !isPotentialDuplicate(item))
+    : previewList;
+
+  const totalIncomesInCents = finalItemsToImport
     .filter((t) => t.type === 'income')
     .reduce((acc, t) => acc + t.amountInCents, 0);
 
-  const totalExpensesInCents = previewList
+  const totalExpensesInCents = finalItemsToImport
     .filter((t) => t.type === 'expense')
     .reduce((acc, t) => acc + t.amountInCents, 0);
 
@@ -299,31 +339,69 @@ export const BankImportModal: React.FC<BankImportModalProps> = ({
                 </div>
               </div>
 
+              {/* Aviso de Duplicidade */}
+              {duplicatesInPreview.length > 0 && (
+                <div className="bg-amber-50/90 border border-amber-200 rounded-lg p-2.5 text-xs space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-900 text-[11px]">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <span>Atenção: {duplicatesInPreview.length} lançamento(s) já parecem existir no seu histórico</span>
+                  </div>
+                  <label className="flex items-center gap-2 text-stone-800 cursor-pointer select-none text-[11px]">
+                    <input
+                      type="checkbox"
+                      checked={skipDuplicates}
+                      onChange={(e) => setSkipDuplicates(e.target.checked)}
+                      className="rounded border-stone-300 text-emerald-700 focus:ring-emerald-500"
+                    />
+                    <span>Desconsiderar lançamentos já existentes (Evita duplicar despesas)</span>
+                  </label>
+                </div>
+              )}
+
               <div className="max-h-40 overflow-y-auto divide-y divide-stone-200 border border-stone-200 rounded-lg bg-white">
-                {previewList.map((tx, idx) => (
-                  <div key={idx} className="p-2 flex items-center justify-between text-[11px]">
-                    <div className="flex items-center gap-1.5">
-                      {tx.type === 'income' ? (
-                        <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600" />
-                      ) : (
-                        <ArrowDownRight className="w-3.5 h-3.5 text-rose-600" />
-                      )}
-                      <div>
-                        <span className="font-medium text-stone-900">{tx.description}</span>
-                        <span className="text-stone-500 block text-[10px]">
-                          {tx.category} • {tx.dueDate}
-                        </span>
-                      </div>
-                    </div>
-                    <span
-                      className={`font-bold ${
-                        tx.type === 'income' ? 'text-emerald-700' : 'text-stone-900'
+                {previewList.map((tx, idx) => {
+                  const isDup = isPotentialDuplicate(tx);
+                  const isIgnored = isDup && skipDuplicates;
+
+                  return (
+                    <div
+                      key={idx}
+                      className={`p-2 flex items-center justify-between text-[11px] transition-colors ${
+                        isIgnored ? 'opacity-50 bg-stone-50' : ''
                       }`}
                     >
-                      {formatCents(tx.amountInCents)}
-                    </span>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-1.5">
+                        {tx.type === 'income' ? (
+                          <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        ) : (
+                          <ArrowDownRight className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                        )}
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`font-medium ${isIgnored ? 'line-through text-stone-700' : 'text-stone-900'}`}>
+                              {tx.description}
+                            </span>
+                            {isDup && (
+                              <span className="text-[9px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.2 rounded">
+                                {isIgnored ? 'Ignorado (Duplicado)' : 'Possível Duplicado'}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-stone-700 block text-[10px]">
+                            {tx.category} • {tx.dueDate}
+                          </span>
+                        </div>
+                      </div>
+                      <span
+                        className={`font-bold shrink-0 ml-2 ${
+                          tx.type === 'income' ? 'text-emerald-700' : 'text-stone-900'
+                        } ${isIgnored ? 'line-through text-stone-700' : ''}`}
+                      >
+                        {formatCents(tx.amountInCents)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -340,16 +418,16 @@ export const BankImportModal: React.FC<BankImportModalProps> = ({
           </button>
           <button
             type="button"
-            disabled={previewList.length === 0}
+            disabled={finalItemsToImport.length === 0}
             onClick={handleConfirmImport}
             className={`px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs transition-colors ${
-              previewList.length > 0
+              finalItemsToImport.length > 0
                 ? 'bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer'
                 : 'bg-stone-200 text-stone-400 cursor-not-allowed'
             }`}
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>Confirmar e Alimentar as Fatias</span>
+            <span>Confirmar e Alimentar as Fatias ({finalItemsToImport.length})</span>
           </button>
         </div>
       </div>
