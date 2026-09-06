@@ -1,3 +1,4 @@
+import { mergeImported } from './utils/importTransactions';
 import { useState, useEffect, useMemo } from 'react';
 import {
   CalendarClock,
@@ -71,18 +72,11 @@ export function App() {
   const handleImportBankTransactions = (
     newTransactions: Omit<Transaction, 'id' | 'createdAt'>[]
   ) => {
-    const created: Transaction[] = newTransactions.map((tx, idx) => ({
-      ...tx,
-      id: `tx-bank-${Date.now()}-${idx}`,
-      createdAt: new Date().toISOString(),
-    }));
-
     setData((prev) => ({
       ...prev,
-      transactions: [...created, ...prev.transactions],
+      transactions: mergeImported(prev.transactions, newTransactions, new Date().toISOString()),
     }));
-
-    showToast(`${created.length} lançamentos bancários importados e fatias atualizadas!`);
+    showToast('Importação conferida. Lançamentos já importados foram ignorados.');
   };
 
   // Salvar automaticamente no localStorage sempre que os dados mudarem

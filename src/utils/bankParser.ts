@@ -1,122 +1,66 @@
-import { Transaction } from '../types';
-import { parseToCents } from './money';
-
-/**
- * Analisa o conteúdo de um arquivo OFX padrão de bancos brasileiros (Nubank, Inter, Itaú, Bradesco, etc.)
- */
-export function parseOFX(ofxContent: string): Omit<Transaction, 'id' | 'createdAt'>[] {
-  const transactions: Omit<Transaction, 'id' | 'createdAt'>[] = [];
-
-  // Procura por blocos <STMTTRN>...</STMTTRN>
-  const trnRegex = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi;
-  let match: RegExpExecArray | null;
-
-  while ((match = trnRegex.exec(ofxContent)) !== null) {
-    const block = match[1];
-
-    // Tipo: <TRNTYPE>DEBIT ou CREDIT
-    const trnTypeMatch = block.match(/<TRNTYPE>([^<\r\n]+)/i);
-    const trnType = trnTypeMatch ? trnTypeMatch[1].trim().toUpperCase() : 'DEBIT';
-
-    // Data: <DTPOSTED>YYYYMMDD...
-    const dtMatch = block.match(/<DTPOSTED>(\d{4})(\d{2})(\d{2})/i);
-    let dueDate = new Date().toISOString().slice(0, 10);
-    if (dtMatch) {
-      dueDate = `${dtMatch[1]}-${dtMatch[2]}-${dtMatch[3]}`;
-    }
-
-    // Valor: <TRNAMT>-125.50
-    const amtMatch = block.match(/<TRNAMT>([^<\r\n]+)/i);
-    const rawAmt = amtMatch ? amtMatch[1].trim() : '0';
-    const numAmt = parseFloat(rawAmt.replace(',', '.'));
-    const isIncome = numAmt > 0 || trnType === 'CREDIT';
-    const absCents = Math.abs(Math.round(numAmt * 100));
-
-    // Descrição: <MEMO> ou <NAME>
-    const memoMatch = block.match(/<MEMO>([^<\r\n]+)/i);
-    const nameMatch = block.match(/<NAME>([^<\r\n]+)/i);
-    const rawDesc = memoMatch ? memoMatch[1].trim() : nameMatch ? nameMatch[1].trim() : 'Lançamento bancário';
-
-    if (absCents > 0) {
-      transactions.push({
-        description: cleanDescription(rawDesc),
-        amountInCents: absCents,
-        type: isIncome ? 'income' : 'expense',
-        status: 'completed', // Já consta no extrato do banco
-        dueDate,
-        paidDate: dueDate,
-        category: categorizeDescription(rawDesc, isIncome),
-      });
-    }
-  }
-
-  return transactions;
+import type { Transaction } from '../types';
+type Imported = Omit<Transaction, 'id' | 'createdAt'>;
+function validDate(date: string): boolean {
+  const d = new Date(date + 'T12:00:00Z');
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(+d) && d.toISOString().slice(0,10) === date;
 }
-
-/**
- * Analisa texto copiado e colado do extrato do app do banco (Pix, boletos, compras)
- * Suporta formatos comuns como:
- * "12/09 Pix enviado - João Silva R$ 150,00"
- * "10/09 Salário Empresa X +R$ 3.500,00"
- * "Supermercado Extra - R$ 240,50"
- */
-export function parsePastedStatement(rawText: string, currentYear: string): Omit<Transaction, 'id' | 'createdAt'>[] {
-  const lines = rawText.split('\n').map((l) => l.trim()).filter(Boolean);
-  const transactions: Omit<Transaction, 'id' | 'createdAt'>[] = [];
-
-  const moneyRegex = /(?:R\$\s*|\+\s*|-\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}|\d+\.\d{2})/i;
-  const dateRegex = /(\d{2})\/(\d{2})(?:\/(\d{2,4}))?/;
-
-  for (const line of lines) {
-    const moneyMatch = line.match(moneyRegex);
-    if (!moneyMatch) continue;
-
-    const amountInCents = parseToCents(moneyMatch[1]);
-    if (amountInCents <= 0) continue;
-
-    const dateMatch = line.match(dateRegex);
-    let dueDate = new Date().toISOString().slice(0, 10);
-    if (dateMatch) {
-      const day = dateMatch[1].padStart(2, '0');
-      const month = dateMatch[2].padStart(2, '0');
-      const year = dateMatch[3] ? (dateMatch[3].length === 2 ? '20' + dateMatch[3] : dateMatch[3]) : currentYear;
-      dueDate = `${year}-${month}-${day}`;
-    }
-
-    // Detectar se é entrada ou saída
-    const lower = line.toLowerCase();
-    const isIncome =
-      line.includes('+') ||
-      lower.includes('recebido') ||
-      lower.includes('salário') ||
-      lower.includes('rendimento') ||
-      lower.includes('depósito') ||
-      lower.includes('transferência recebida');
-
-    // Limpar descrição removendo a data e o valor
-    let desc = line
-      .replace(moneyRegex, '')
-      .replace(dateRegex, '')
-      .replace(/R\$/gi, '')
-      .replace(/[-+]/g, '')
-      .trim();
-
-    if (!desc) {
-      desc = isIncome ? 'Entrada bancária' : 'Saída bancária';
-    }
-
-    transactions.push({
-      description: cleanDescription(desc),
-      amountInCents,
-      type: isIncome ? 'income' : 'expense',
-      status: 'completed',
-      dueDate,
-      paidDate: dueDate,
-      category: categorizeDescription(desc, isIncome),
-    });
+function cents(raw: string): number {
+  if (!/^[+-]?\d+(?:[.,]\d{1,2})?$/.test(raw)) throw Error('Valor inválido no extrato.');
+  const [whole, fraction = ''] = raw.replace(/^[+-]/, '').split(/[.,]/);
+  const amount = Number(whole) * 100 + Number(fraction.padEnd(2,'0'));
+  if (!Number.isSafeInteger(amount) || amount <= 0) throw Error('Valor inválido no extrato.');
+  return amount;
+}
+function identities(items: Imported[], scope: string): Imported[] {
+  const occurrences = new Map<string, number>();
+  return items.map(t => {
+    if (t.importKey) return t;
+    const base = JSON.stringify([scope,t.dueDate,t.type,t.amountInCents,t.description.toLowerCase().replace(/\s+/g,' ')]);
+    const count = (occurrences.get(base) || 0) + 1;
+    occurrences.set(base,count);
+    return {...t, importKey: JSON.stringify(['fallback',base,count])};
+  });
+}
+export function parseOFX(content: string): Imported[] {
+  const tag = (text: string, name: string) => text.match(new RegExp('<'+name+'>([^<\\r\\n]+)', 'i'))?.[1].trim();
+  const scope = JSON.stringify([tag(content,'BANKID'),tag(content,'BRANCHID'),tag(content,'ACCTID'),tag(content,'ACCTTYPE')]);
+  if (!tag(content,'ACCTID')) throw Error('OFX sem identificação da conta. Não foi importado.');
+  const result: Imported[] = [];
+  for (const match of content.matchAll(/<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi)) {
+    const block = match[1];
+    const posted = tag(block,'DTPOSTED');
+    const dueDate = posted?.match(/^(\d{4})(\d{2})(\d{2})/);
+    const date = dueDate ? `${dueDate[1]}-${dueDate[2]}-${dueDate[3]}` : '';
+    if (!validDate(date)) throw Error('OFX com data ausente ou inválida. Confira o arquivo.');
+    const raw = tag(block,'TRNAMT');
+    if (!raw) throw Error('OFX com valor ausente.');
+    const amountInCents = cents(raw);
+    const income = !raw.startsWith('-');
+    const description = cleanDescription(tag(block,'MEMO') || tag(block,'NAME') || 'Lançamento bancário');
+    const fitid = tag(block,'FITID');
+    result.push({description, amountInCents, type:income?'income':'expense',status:'completed',dueDate:date,paidDate:date,category:categorizeDescription(description,income),importKey:fitid ? JSON.stringify(['ofx',scope,fitid]) : undefined});
   }
-
-  return transactions;
+  if (!result.length) throw Error('Nenhum lançamento OFX reconhecido. Confira o formato do arquivo.');
+  return identities(result,scope);
+}
+export function parsePastedStatement(text: string, currentYear: string): Imported[] {
+  const result: Imported[] = [];
+  for (const line of text.split('\n').map(l=>l.trim()).filter(Boolean)) {
+    const dateMatch = line.match(/(\d{2})\/(\d{2})(?:\/(\d{4}|\d{2}))?/);
+    const values = [...line.matchAll(/(?:R\$\s*)?([+-]?\s*(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})(?!\d)/g)];
+    if (!dateMatch || values.length !== 1) throw Error('Cada linha precisa de uma data e um único valor em reais (ex.: 06/09/2026 Pix enviado -50,00).');
+    const year = dateMatch[3] ? (dateMatch[3].length===2?'20'+dateMatch[3]:dateMatch[3]) : currentYear;
+    const date = `${year}-${dateMatch[2]}-${dateMatch[1]}`;
+    if (!validDate(date)) throw Error('Data inválida no texto.');
+    const raw = values[0][1].replace(/\s|\./g,'');
+    const lower = line.toLowerCase();
+    const income = !raw.startsWith('-') && (raw.startsWith('+') || /recebid[oa]|salário|salario|rendimento|depósito/.test(lower));
+    const description = cleanDescription(line.replace(values[0][0],'').replace(dateMatch[0],'').replace(/R\$/g,''));
+    if (!description) throw Error('Inclua a descrição do lançamento.');
+    result.push({description,amountInCents:cents(raw),type:income?'income':'expense',status:'completed',dueDate:date,paidDate:date,category:categorizeDescription(description,income)});
+  }
+  if (!result.length) throw Error('Cole ao menos um lançamento.');
+  return identities(result,'pasted');
 }
 
 function cleanDescription(desc: string): string {

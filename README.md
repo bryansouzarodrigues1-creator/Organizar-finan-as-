@@ -27,3 +27,9 @@ Aplicativo executável implementado no Google AI Studio (Vite + React + TypeScri
 Definir o fluxo principal e validar a integração da ferramenta de construção com este repositório antes de escolher a estrutura técnica.
 
 Nome comercial, tecnologias, preços e provedor de IA ainda não estão definidos.
+
+## Importação e simulações
+
+Importação OFX/texto é manual; Open Finance real ainda não está conectado. Veja [correções, hipóteses dos juros e limites de importação](docs/correcoes-importacao-juros.md).
+
+Para validar: `npm ci`, `npm test` e `npm run build`. O arquivo de dependências travadas foi incluído para reproduzir a instalação.

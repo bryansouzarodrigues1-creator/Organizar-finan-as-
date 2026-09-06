@@ -1,3 +1,4 @@
+import { comparePayments } from '../utils/debtSimulation';
 import React, { useState, useMemo } from 'react';
 import {
   Zap,
@@ -35,7 +36,7 @@ export const DebtAttackPlan: React.FC<DebtAttackPlanProps> = ({
   const sortedDebts = useMemo(() => {
     const list = [...activeDebts];
     if (strategy === 'interest') {
-      return list.sort((a, b) => (b.interestRateMonthly || 0) - (a.interestRateMonthly || 0));
+      return list.sort((a, b) => (b.interestRateMonthly ?? -1) - (a.interestRateMonthly ?? -1));
     } else {
       return list.sort((a, b) => a.totalDebtInCents - b.totalDebtInCents);
     }
@@ -53,39 +54,17 @@ export const DebtAttackPlan: React.FC<DebtAttackPlanProps> = ({
   const primaryTarget = sortedDebts[0];
 
   // Cálculo de simulação de aceleração para a dívida prioritária
-  const targetSimulation = useMemo(() => {
-    if (!primaryTarget) return null;
-
-    const extraCents = extraMonthlyContribution * 100;
-    const currentInstallment = primaryTarget.installmentAmountInCents;
-    const totalRemaining = primaryTarget.totalDebtInCents;
-    const monthlyRate = (primaryTarget.interestRateMonthly || 2.5) / 100;
-
-    // Meses normais restantes
-    const normalMonths = primaryTarget.remainingInstallments;
-
-    // Novo valor mensal aportado
-    const acceleratedMonthly = currentInstallment + extraCents;
-
-    // Estimativa de novos meses para quitação
-    const acceleratedMonths = Math.max(
-      1,
-      Math.ceil(totalRemaining / (acceleratedMonthly > 0 ? acceleratedMonthly : 1))
-    );
-
-    const monthsSaved = Math.max(0, normalMonths - acceleratedMonths);
-
-    // Economia estimada de juros em reais (R$)
-    const interestSavedInCents = Math.round(
-      monthsSaved * (totalRemaining * monthlyRate * 0.7)
-    );
-
-    return {
-      monthsSaved,
-      acceleratedMonths,
-      interestSavedInCents: Math.max(0, interestSavedInCents),
-    };
+  const simulation = useMemo(() => {
+    if (!primaryTarget) return { result: null, error: '' };
+    try {
+      return {result: comparePayments(primaryTarget.totalDebtInCents,
+        primaryTarget.installmentAmountInCents, primaryTarget.interestRateMonthly,
+        extraMonthlyContribution * 100), error: ''};
+    } catch (error) {
+      return {result: null, error: error instanceof Error ? error.message : 'Não foi possível simular.'};
+    }
   }, [primaryTarget, extraMonthlyContribution]);
+  const targetSimulation = simulation.result;
 
   if (activeDebts.length === 0) {
     return (
@@ -163,6 +142,9 @@ export const DebtAttackPlan: React.FC<DebtAttackPlanProps> = ({
         </div>
       </div>
 
+      <p className="text-sm text-stone-700">Simulação estimada: saldo principal atual, taxa mensal fixa, pagamento no fim de cada mês e arredondamento mensal em centavos. Não inclui tarifas, seguros ou regras do contrato. Confira se o saldo informado exclui juros futuros.</p>
+      {activeDebts.some(d => d.interestRateMonthly === undefined) && <p role="status" className="text-sm text-amber-800">Há dívidas sem taxa mensal. A ordem por juros está incompleta; informe as taxas para comparar.</p>}
+      {simulation.error && <p role="status" className="text-sm text-amber-800">{simulation.error}</p>}
       {/* Destaque: O Alvo Prioritário de Eliminação */}
       {primaryTarget && targetSimulation && (
         <div className="bg-gradient-to-br from-rose-950 to-stone-900 text-white rounded-2xl p-5 shadow-sm space-y-4">
@@ -175,7 +157,7 @@ export const DebtAttackPlan: React.FC<DebtAttackPlanProps> = ({
               <h3 className="text-lg font-extrabold text-white">{primaryTarget.name}</h3>
               <p className="text-xs text-stone-300">
                 Saldo devedor: <strong>{formatCents(primaryTarget.totalDebtInCents)}</strong> • Parcela atual: {formatCents(primaryTarget.installmentAmountInCents)}/mês
-                {primaryTarget.interestRateMonthly && ` • Juros de ${primaryTarget.interestRateMonthly}% ao mês`}
+                {primaryTarget.interestRateMonthly !== undefined && ` • Juros de ${primaryTarget.interestRateMonthly}% ao mês`}
               </p>
             </div>
 
@@ -220,7 +202,7 @@ export const DebtAttackPlan: React.FC<DebtAttackPlanProps> = ({
                   <TrendingDown className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-[11px] text-stone-300">Tempo adiantado</div>
+                  <div className="text-[11px] text-stone-300">Redução estimada do prazo</div>
                   <div className="text-sm font-bold text-emerald-400">
                     {targetSimulation.monthsSaved > 0
                       ? `Quita ${targetSimulation.monthsSaved} meses antes!`
@@ -234,11 +216,11 @@ export const DebtAttackPlan: React.FC<DebtAttackPlanProps> = ({
                   <DollarSign className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-[11px] text-stone-300">Dinheiro salvo em juros</div>
+                  <div className="text-[11px] text-stone-300">Economia estimada de juros</div>
                   <div className="text-sm font-bold text-amber-300">
                     {targetSimulation.interestSavedInCents > 0
                       ? `Economiza ~${formatCents(targetSimulation.interestSavedInCents)}`
-                      : 'Elimina juros adicionais'}
+                      : 'Sem economia de juros neste cenário'}
                   </div>
                 </div>
               </div>
