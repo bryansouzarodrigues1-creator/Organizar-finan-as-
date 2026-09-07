@@ -36,7 +36,7 @@ export const DebtFormModal: React.FC<DebtFormModalProps> = ({
       setRemainingInstallments(editingDebt.remainingInstallments);
       setDueDayOfMonth(editingDebt.dueDayOfMonth);
       setInterestRateText(editingDebt.interestRateText || '');
-      setInterestRateMonthly(editingDebt.interestRateMonthly ? String(editingDebt.interestRateMonthly) : '');
+      setInterestRateMonthly(editingDebt.interestRateMonthly !== undefined ? String(editingDebt.interestRateMonthly) : '');
       setNotes(editingDebt.notes || '');
     } else {
       setName('');
@@ -79,17 +79,17 @@ export const DebtFormModal: React.FC<DebtFormModalProps> = ({
       return;
     }
 
-    let monthlyRate: number | undefined = undefined;
-    if (interestRateMonthly) {
-      const parsed = parseFloat(interestRateMonthly.replace(',', '.'));
-      if (!isNaN(parsed)) monthlyRate = parsed;
-    } else if (interestRateText) {
-      const match = interestRateText.match(/(\d+(?:[.,]\d+)?)\s*%/);
-      if (match) {
-        const parsed = parseFloat(match[1].replace(',', '.'));
-        if (!isNaN(parsed)) monthlyRate = parsed;
+    let monthlyRate: number | undefined;
+    if (interestRateMonthly.trim() !== '') {
+      const raw = interestRateMonthly.trim().replace(',', '.');
+      const parsed = Number(raw);
+      if (!/^\d+(?:\.\d{1,6})?$/.test(raw) || !Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+        setError('Informe a taxa mensal de 0 a 100%, com até seis casas decimais.');
+        return;
       }
+      monthlyRate = parsed;
     }
+    // Texto livre pode conter taxa anual ou CET; nunca inferir taxa mensal dele.
 
     onSave(
       {

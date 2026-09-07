@@ -7,3 +7,27 @@
     margin: 0;
   }
 }
+
+@layer base {
+  button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+    outline: 3px solid #047857;
+    outline-offset: 3px;
+  }
+}
+@layer components {
+  .chat-shortcut {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    min-height: 44px;
+    padding: .65rem .85rem;
+    border: 1px solid #d6d3d1;
+    border-radius: .75rem;
+    font-size: .875rem;
+    font-weight: 600;
+    color: #064e3b;
+    background: white;
+    cursor: pointer;
+  }
+  .chat-shortcut:hover { background: #ecfdf5; border-color: #6ee7b7; }
+}

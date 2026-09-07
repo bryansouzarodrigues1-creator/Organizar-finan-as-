@@ -1,0 +1,2 @@
+[functions.open-finance]
+verify_jwt = true

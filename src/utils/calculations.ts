@@ -25,12 +25,12 @@ export function calculateFinancialSummary(
   // 1. Quanto dinheiro tenho agora? (Saldo Realizado em Caixa)
   // Saldo inicial + todas as receitas realizadas - todas as despesas realizadas até hoje
   const completedIncomes = transactions.filter(
-    (t) => t.type === 'income' && t.status === 'completed'
+    (t) => t.type === 'income' && t.status === 'completed' && (t.paidDate || t.dueDate) <= new Date().toISOString().slice(0,10)
   );
   const totalIncomeCompletedInCents = addCents(...completedIncomes.map((t) => t.amountInCents));
 
   const completedExpenses = transactions.filter(
-    (t) => t.type === 'expense' && t.status === 'completed'
+    (t) => t.type === 'expense' && t.status === 'completed' && (t.paidDate || t.dueDate) <= new Date().toISOString().slice(0,10)
   );
   const totalExpenseCompletedInCents = addCents(...completedExpenses.map((t) => t.amountInCents));
 
@@ -81,12 +81,12 @@ export function calculateFinancialSummary(
 
   // 3. Movimentações realizadas especificamente no mês selecionado
   const monthCompletedIncomes = transactions.filter(
-    (t) => t.type === 'income' && t.status === 'completed' && t.dueDate.startsWith(selectedMonthYear)
+    (t) => t.type === 'income' && t.status === 'completed' && (t.paidDate || t.dueDate) <= new Date().toISOString().slice(0,10) && (t.paidDate || t.dueDate).startsWith(selectedMonthYear)
   );
   const monthRealizedIncomeInCents = addCents(...monthCompletedIncomes.map((t) => t.amountInCents));
 
   const monthCompletedExpenses = transactions.filter(
-    (t) => t.type === 'expense' && t.status === 'completed' && t.dueDate.startsWith(selectedMonthYear)
+    (t) => t.type === 'expense' && t.status === 'completed' && (t.paidDate || t.dueDate) <= new Date().toISOString().slice(0,10) && (t.paidDate || t.dueDate).startsWith(selectedMonthYear)
   );
   const monthRealizedExpenseInCents = addCents(...monthCompletedExpenses.map((t) => t.amountInCents));
 
@@ -103,7 +103,7 @@ export function calculateFinancialSummary(
   // No mês atual ou futuro: Saldo Atual + Receitas Previstas no mês - Despesas Pendentes no mês - Parcelas a Vencer
   // Em meses já encerrados no passado: Balanço Líquido Realizado daquele mês
   const projectedAvailableInCents = isPastMonth
-    ? monthNetBalanceInCents
+    ? monthRealizedIncomeInCents - monthRealizedExpenseInCents
     : currentBalanceInCents + pendingIncomeInCents - pendingExpensesInCents - debtInstallmentsPendingInCents;
 
   // Saldo total devedor (dívidas ativas acumuladas)
@@ -191,7 +191,7 @@ export function getUpcomingCommitments(
 
       if (!alreadyPaidThisMonth) {
         // Monta a data de vencimento da parcela no mês (respeitando o dia do mês)
-        const dueDayFormatted = String(Math.min(debt.dueDayOfMonth, 28)).padStart(2, '0');
+        const dueDayFormatted = String(Math.min(debt.dueDayOfMonth, new Date(Number(year), Number(month), 0).getDate())).padStart(2, '0');
         const dueDate = `${year}-${month}-${dueDayFormatted}`;
         const dueDateTime = new Date(dueDate + 'T00:00:00').getTime();
         const diffDays = Math.ceil((dueDateTime - todayTime) / (1000 * 60 * 60 * 24));
