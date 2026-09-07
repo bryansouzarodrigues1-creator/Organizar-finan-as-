@@ -34,3 +34,7 @@ Apoiar a construção de reserva, acompanhamento de metas e simulações de cen�
 - Tecnologias e hospedagem.
 - Profundidade de IA na primeira versão comercial.
 - Preços, limites e diferenciação dos planos.
+
+## Atualização: base consolidada
+
+Interface de conversa sem IA; correções de importação e juros incorporadas; adaptação inicial PWA e adaptador Open Finance em código. Deploy, configuração Lovable/Supabase, sandbox, consentimento real e testes em celular permanecem pendentes. Ver pwa-openfinance.md antes de continuar.

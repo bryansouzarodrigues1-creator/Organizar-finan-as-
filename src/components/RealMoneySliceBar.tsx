@@ -87,7 +87,7 @@ export const RealMoneySliceBar: React.FC<RealMoneySliceBarProps> = ({
           <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs text-emerald-950 font-medium self-start sm:self-auto">
             <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>
-              Você pode gastar até <strong>{formatCents(safeDailySpendInCents)} por dia</strong> com segurança ({statusDayText})
+              Média projetada de <strong>{formatCents(safeDailySpendInCents)} por dia</strong> ({statusDayText})
             </span>
           </div>
         ) : isDeficit ? (
@@ -125,12 +125,12 @@ export const RealMoneySliceBar: React.FC<RealMoneySliceBarProps> = ({
             </div>
           )}
 
-          {/* Fatia 3: Dinheiro Livre Real */}
+          {/* Fatia 3: Dinheiro Projetado */}
           {freeMoneyInCents > 0 && (
             <div
               style={{ width: `${Math.max(8, freeWidth)}%` }}
               className="bg-emerald-600 rounded-lg h-full flex items-center justify-center text-white text-[11px] font-bold px-1 overflow-hidden transition-all duration-300"
-              title={`Dinheiro Livre Real: ${formatCents(freeMoneyInCents)}`}
+              title={`Dinheiro Projetado: ${formatCents(freeMoneyInCents)}`}
             >
               <span className="truncate">{formatCents(freeMoneyInCents)}</span>
             </div>
@@ -182,7 +182,7 @@ export const RealMoneySliceBar: React.FC<RealMoneySliceBarProps> = ({
                 isDeficit ? 'bg-rose-600' : 'bg-emerald-600'
               }`}
             ></span>
-            <span>{isDeficit ? 'Déficit / Falta Dinheiro' : 'Dinheiro Livre de Verdade'}</span>
+            <span>{isDeficit ? 'Déficit / Falta Dinheiro' : 'Saldo projetado de Verdade'}</span>
           </div>
           <div
             className={`text-xl font-extrabold tracking-tight ${

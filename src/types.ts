@@ -11,6 +11,7 @@ export interface Transaction {
   dueDate: string; // YYYY-MM-DD
   paidDate?: string; // YYYY-MM-DD se já realizada
   category: string;
+  importKey?: string; // Identidade estável da importação, preservada ao editar
   debtId?: string; // Vinculado a uma dívida específica se for parcela
   createdAt: string;
 }

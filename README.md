@@ -27,3 +27,17 @@ Aplicativo executável implementado no Google AI Studio (Vite + React + TypeScri
 Definir o fluxo principal e validar a integração da ferramenta de construção com este repositório antes de escolher a estrutura técnica.
 
 Nome comercial, tecnologias, preços e provedor de IA ainda não estão definidos.
+
+## Importação e simulações
+
+Importação OFX/texto é manual; Open Finance real ainda não está conectado. Veja [correções, hipóteses dos juros e limites de importação](docs/correcoes-importacao-juros.md).
+
+Para validar: `npm ci`, `npm run build` e `npm test`. O arquivo de dependências travadas foi incluído para reproduzir a instalação.
+
+## Interface de conversa
+
+A tela inicial agora prepara a conversa com a assistente, acompanhada de resumo financeiro e atalhos para as telas existentes. A IA permanece desconectada e o envio de mensagens desativado. Veja [escopo da interface e integração futura](docs/interface-conversa.md).
+
+## PWA e consulta bancária
+
+Base consolidada com instalação PWA preparada, conversa inicial e aba Bancos. A integração Open Finance está desativada por padrão e precisa de servidor, configuração e testes de consentimento. Nenhuma conta real está conectada. Consulte [implantação, validações e limites](docs/pwa-openfinance.md).

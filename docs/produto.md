@@ -47,3 +47,7 @@ Integração bancária, investimentos automatizados, múltiplas moedas, gamifica
 ## Validação comercial
 
 Testar com pessoas reais se entendem o saldo e os próximos compromissos, voltam para registrar movimentações e pagariam pela ajuda. Relatos compartilhados devem ser voluntários e verdadeiros. Não prometer quitação de dívidas, riqueza ou liberdade financeira garantidas.
+
+## Escopo atualizado pelo fundador
+
+Prioridade em saldo projetado, estratégia de dívidas e redução do cadastro manual. A interface principal é conversa, com dados resumidos e telas próprias de Contas, Dívidas e Histórico. Open Finance de leitura e PWA agora fazem parte da preparação solicitada; seguem desativados para uso real até configurar e validar a infraestrutura. A IA permanece fora desta entrega. Detalhes em pwa-openfinance.md.
